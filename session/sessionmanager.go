@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/sashabaranov/go-openai"
-	"gpt-asker/client"
 	"gpt-asker/config"
 	"log"
 	"os"
@@ -17,20 +16,12 @@ type SessionManager struct {
 	msg []openai.ChatCompletionMessage
 }
 
-var sessionManager *SessionManager
-
-func getSessionManager() *SessionManager {
-	if sessionManager == nil {
-		sessionManager = new(SessionManager)
-		sessionManager.cli = client.GetClient()
-		sessionManager.msg = make([]openai.ChatCompletionMessage, 0)
-	}
-	return sessionManager
+func NewSessionManager(client *openai.Client) *SessionManager {
+	return &SessionManager{cli: client, msg: make([]openai.ChatCompletionMessage, 0)}
 }
 
-func SendMessage(message string) (response string) {
+func (manager *SessionManager) SendMessage(message string) (response string) {
 	message = strings.Replace(message, "\r", "", -1)
-	manager := getSessionManager()
 	manager.msg = append(manager.msg, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
 		Content: message,
@@ -54,12 +45,12 @@ func SendMessage(message string) (response string) {
 	return
 }
 
-func Spin() {
+func (manager *SessionManager) Spin() {
 	cfg := config.GetConfig()
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print(cfg.UserName, ": ")
 		input, _ := reader.ReadString('\n')
-		fmt.Println("GPT :", SendMessage(input))
+		fmt.Println("GPT :", manager.SendMessage(input))
 	}
 }
